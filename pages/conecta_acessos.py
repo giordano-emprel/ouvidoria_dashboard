@@ -2,15 +2,21 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dados import carregar_dados_acessos, carregar_dados_acessos_bq
+from dados import obter_dataframes_acessos, carregar_dados_acessos_bq
 
 # Carrega os dados (com cache)
-df_pizza, df_mes, df_tabela, df_forma = carregar_dados_acessos_bq()
-
+df_acessos, df_tabela = carregar_dados_acessos_bq()
 
 st.header("Acessos às páginas do Conecta Recife", divider="gray")
 
-# --- ÁREA DE FILTROS (Com Moldura) ---
+# ---------------------------------------------------------
+# 1. FORMULÁRIO DE FILTROS
+# ---------------------------------------------------------
+
+lista_orgaos = [
+    orgao for orgao in df_acessos['orgao_nome'].unique() 
+    if isinstance(orgao, str) and orgao.strip() != ''
+]
 
 with st.form("filtros_acessos_form"):
     col1, col2, col3, col4, col5 = st.columns([2, 2, 4, 1, 1])
@@ -18,7 +24,7 @@ with st.form("filtros_acessos_form"):
     with col1:
         orgao_ext_int = st.selectbox("Órgão", ["All", "Interno", "Externo"])
     with col2:
-        orgao = st.selectbox("Órgão", ["All"] + list(df_tabela['Órgão']))
+        orgao = st.selectbox("Órgão", ["All"] + lista_orgaos)
     with col3:
         pesquisa = st.text_input("Pesquisa pela descrição", placeholder="Search")
     with col4:
@@ -30,10 +36,48 @@ with st.form("filtros_acessos_form"):
     with col_submit:
         submit_button = st.form_submit_button(label="Aplicar Filtros")
 
-# Lógica de filtragem local
+# ---------------------------------------------------------
+# 2. APLICAÇÃO DOS FILTROS
+# ---------------------------------------------------------
+
 if submit_button:
+    # 1. Cria máscaras iniciais onde todas as linhas são verdadeiras (True)
+    mask_acessos = pd.Series(True, index=df_acessos.index)
+    mask_tabela = pd.Series(True, index=df_tabela.index)
+    
+    # 2. Filtro: Tipo de Órgão (Interno/Externo)
+    if orgao_ext_int != "All":
+        # Supondo que a coluna seja 'orgao_tipo'
+        mask_acessos &= (df_acessos['orgao_tipo'] == orgao_ext_int)
+        
+    # 3. Filtro: Nome do Órgão
     if orgao != "All":
-        df_tabela = df_tabela[df_tabela['Órgão'] == orgao]
+        mask_acessos &= (df_acessos['orgao_nome'] == orgao)
+        mask_tabela &= (df_tabela['Órgão'] == orgao)
+        
+    # 4. Filtro: Pesquisa de Texto (Busca por substring ignorando maiúsculas/minúsculas)
+    if pesquisa.strip():
+        # Supondo que a pesquisa seja feita na coluna 'nome'
+        mask_acessos &= df_acessos['nome'].str.contains(pesquisa.strip(), case=False, na=False)
+        
+    # 5. Filtro: Ano (Como seu selectbox não tem "All", ele sempre aplicará este filtro)
+    mask_acessos &= (df_acessos['ano'] == int(ano))
+    
+    # 6. Filtro: Mês (Mapeando a string do Streamlit para o inteiro do BigQuery)
+    if mes != "All":
+        meses_map = {"Jan": 1, "Fev": 2, "Mar": 3, "Abr": 4, "Mai": 5, "Jun": 6, 
+                     "Jul": 7, "Ago": 8, "Set": 9, "Out": 10, "Nov": 11, "Dez": 12}
+        mask_acessos &= (df_acessos['mes'] == meses_map.get(mes))
+        
+    # 7. Aplica os filtros definitivos criando os dataframes para os gráficos/tabelas
+    df_acessos_filtrado = df_acessos[mask_acessos]
+    df_tabela_filtrada = df_tabela[mask_tabela]
+
+# ---------------------------------------------------------
+# 3. CONSTRUÇÃO DOS GRÁFICOS
+# ---------------------------------------------------------
+
+df_pizza, df_mes, df_tabela, df_forma = obter_dataframes_acessos(df_acessos)
 
 # --- LINHA SUPERIOR DE VISUALIZAÇÕES (Com Molduras) ---
 col_graf1, col_graf2 = st.columns([1, 2.5])
@@ -44,10 +88,10 @@ with col_graf1:
         # Gráfico de Pizza (Proporção App/Web)
         fig_pizza = px.pie(
             df_pizza, 
-            values='Acessos', 
-            names='Origem', 
+            values='quantidade', 
+            names='web_ou_app', 
             hole=0, 
-            color='Origem',
+            color='web_ou_app',
             color_discrete_map={'app': '#E36B15', 'web': '#0A4B95'}
         )
         fig_pizza.update_traces(textinfo='label+percent', textposition='inside')

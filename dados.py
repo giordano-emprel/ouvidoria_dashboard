@@ -41,21 +41,12 @@ def run_query(query: str, params: dict = None) -> pd.DataFrame:
 # ---------------------------------------------------------
 
 @st.cache_data
-def carregar_dados_acessos_bq():
-    sql_query = """
-        SELECT *
-        FROM `cadastro-unico-pessoa.dashboard_ouvidoria.tb_acessos_agrupados`
-    """
-
-    with st.spinner("Carregando dados do BigQuery..."):
-        df_acessos = run_query(sql_query)
+def obter_dataframes_acessos(df: pd.DataFrame):
 
     # Dados para o gráfico de pizza (Proporção App/Web)
-
-
     dados_pizza = (
-        df_acessos.groupby('web_ou_app', as_index=False)['quantidade'].sum()
-    ).rename(columns={"web_ou_app":"Origem", "quantidade":"Acessos"})
+        df.groupby('web_ou_app', as_index=False)['quantidade'].sum()
+    )
     # dados_pizza = pd.DataFrame({
     #     'Origem': ['app', 'web'],
     #     'Acessos': [87, 13]
@@ -91,6 +82,73 @@ def carregar_dados_acessos_bq():
     })
 
     return dados_pizza, dados_mes, dados_tabela, dados_forma
+
+@st.cache_data
+def carregar_dados_acessos():
+    """Simula a carga de dados de acessos com cache para eficiência."""
+    # Dados para o gráfico de pizza (Proporção App/Web)
+    dados_pizza = pd.DataFrame({
+        'Origem': ['app', 'web'],
+        'Acessos': [87, 13]
+    })
+
+    # Dados para o gráfico de barras empilhadas (Acessos por mês)
+    dados_mes = pd.DataFrame({
+        'Mês': ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out'],
+        'App': [1610466, 1537614, 1561591, 1555307, 1321622, 1202491, 1296594, 1182020, 1043188, 50000],
+        'Web': [200000, 180000, 190000, 185000, 150000, 140000, 160000, 130000, 110000, 5000]
+    })
+    
+    # Dados para a tabela principal (Serviços mais acessados)
+    dados_tabela = pd.DataFrame({
+        'Órgão': [
+            'Secretaria de Assistência Social e Combate à Fome',
+            'Secretaria de Saúde',
+            'Secretaria de Esportes',
+            'Controladoria-Geral do Município',
+            'Secretaria de Trabalho e Qualificação Profissional'
+        ],
+        'Total Acessos': [2704564, 2483106, 2249450, 1974668, 1071784],
+        'WEB': [362524, 211060, 100142, 7165, 63007],
+        'APP': [2342040, 2272046, 2149308, 1967503, 1008777]
+    })
+
+    # Dados para o gráfico de barras horizontais (Forma de acesso)
+    dados_forma = pd.DataFrame({
+        'Forma': ['Serviço', 'Destaque', 'Categoria', 'Trilha', '(Blank)'],
+        'Acessos_App': [8825639, 2672910, 2525694, 378027, 254],
+        'Acessos_Web': [1000000, 500000, 400000, 50000, 10]
+    })
+
+    return dados_pizza, dados_mes, dados_tabela, dados_forma
+
+
+
+@st.cache_data
+def carregar_dados_acessos_bq():
+    sql_query = """
+        SELECT *
+        FROM `cadastro-unico-pessoa.dashboard_ouvidoria.tb_acessos_agrupados`
+    """
+
+    with st.spinner("Carregando dados do BigQuery..."):
+        df_acessos = run_query(sql_query)
+
+    # Dados para a tabela principal (Serviços mais acessados)
+    dados_tabela = pd.DataFrame({
+        'Órgão': [
+            'Secretaria de Assistência Social e Combate à Fome',
+            'Secretaria de Saúde',
+            'Secretaria de Esportes',
+            'Controladoria-Geral do Município',
+            'Secretaria de Trabalho e Qualificação Profissional'
+        ],
+        'Total Acessos': [2704564, 2483106, 2249450, 1974668, 1071784],
+        'WEB': [362524, 211060, 100142, 7165, 63007],
+        'APP': [2342040, 2272046, 2149308, 1967503, 1008777]
+    })
+
+    return df_acessos, dados_tabela
 
 @st.cache_data
 def carregar_dados_acessos():
