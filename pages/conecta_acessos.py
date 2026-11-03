@@ -2,10 +2,11 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dados import carregar_dados_acessos
+from dados import carregar_dados_acessos, carregar_dados_acessos_bq
 
 # Carrega os dados (com cache)
-df_pizza, df_mes, df_tabela, df_forma = carregar_dados_acessos()
+df_pizza, df_mes, df_tabela, df_forma = carregar_dados_acessos_bq()
+
 
 st.header("Acessos às páginas do Conecta Recife", divider="gray")
 
@@ -95,16 +96,68 @@ with col_tab:
 with col_forma:
     with st.container(border=True):
         st.markdown("<h6 style='text-align: center; color: #555;'>Forma de acesso</h6>", unsafe_allow_html=True)
-        # Gráfico de Barras Horizontais
-        fig_forma = go.Figure(data=[
-             go.Bar(name='App', y=df_forma['Forma'], x=df_forma['Acessos_App'], orientation='h', marker_color='#E36B15'),
-             go.Bar(name='Web', y=df_forma['Forma'], x=df_forma['Acessos_Web'], orientation='h', marker_color='#0A4B95')
-        ])
+        
+        # Ordena para manter a sequência original (Serviço, Destaque, Categoria, Trilha, Blank)
+        df_forma_sorted = df_forma.iloc[::-1].copy()
+        
+        fig_forma = go.Figure()
+        
+        # Barra Laranja (App)
+        fig_forma.add_trace(go.Bar(
+            name='App',
+            y=df_forma_sorted['Forma'],
+            x=df_forma_sorted['Acessos_App'],
+            orientation='h',
+            marker_color='#E36B15',
+            width=0.35
+        ))
+        
+        # Barra Azul (Web)
+        fig_forma.add_trace(go.Bar(
+            name='Web',
+            y=df_forma_sorted['Forma'],
+            x=df_forma_sorted['Acessos_Web'],
+            orientation='h',
+            marker_color='#0A4B95',
+            width=0.35
+        ))
+        
+        # Adiciona o nome da categoria ACIMA da barra e o total acumulado À DIREITA
+        for _, row in df_forma_sorted.iterrows():
+            total_acessos = row['Acessos_App'] + row['Acessos_Web']
+            total_formatado = f"{total_acessos:,}".replace(',', '.')
+            
+            # Texto da categoria (em cima da barra)
+            fig_forma.add_annotation(
+                x=0,
+                y=row['Forma'],
+                text=f"<b>{row['Forma']}</b>",
+                showarrow=False,
+                xanchor='left',
+                yanchor='bottom',
+                yshift=10,
+                font=dict(size=12, color='black')
+            )
+            
+            # Valor total (à direita da barra empilhada)
+            fig_forma.add_annotation(
+                x=total_acessos,
+                y=row['Forma'],
+                text=f" {total_formatado}",
+                showarrow=False,
+                xanchor='left',
+                yanchor='middle',
+                font=dict(size=11, color='black')
+            )
+
         fig_forma.update_layout(
-            barmode='stack', 
-            margin=dict(t=10, b=10, l=10, r=10), 
+            barmode='stack',
+            xaxis_visible=False,
+            yaxis_visible=False,
+            margin=dict(t=20, b=10, l=10, r=60), # r=60 para dar espaço ao texto do total à direita
             height=300,
-            showlegend=False
+            showlegend=False,
+            plot_bgcolor='rgba(0,0,0,0)'
         )
-        fig_forma.update_yaxes(autorange="reversed") 
+        
         st.plotly_chart(fig_forma, width='stretch')

@@ -92,29 +92,95 @@ with st.container(border=True):
         st.markdown(f"**TOTAL:** Dislike: **73,506** | Like: **1,013** | % Dislike: **99%** | Total: **74,519**")
 
 # --- LINHA INFERIOR (TAGS E COMENTÁRIOS) (Com Molduras) ---
+
 col_inf1, col_inf2, col_inf3 = st.columns([1, 1, 2])
 
 with col_inf1:
     with st.container(border=True):
         st.markdown("<h6 style='text-align: center;'>Tags negativas</h6>", unsafe_allow_html=True)
-        fig_neg = px.bar(df_tags_neg, x='Quantidade', y='Tag', orientation='h', text='Quantidade')
-        fig_neg.update_traces(marker_color='#D62728', textposition='inside')
-        fig_neg.update_layout(yaxis={'categoryorder':'total ascending'}, xaxis_visible=False, margin=dict(t=0, b=0, l=0, r=0), height=280)
+        
+        # Ordena os dados (Plotly renderiza de baixo para cima)
+        df_neg_sorted = df_tags_neg.sort_values('Quantidade', ascending=True)
+        
+        fig_neg = go.Figure()
+        fig_neg.add_trace(go.Bar(
+            x=df_neg_sorted['Quantidade'],
+            y=df_neg_sorted['Tag'],
+            orientation='h',
+            # Formata os números no padrão brasileiro (14.680)
+            text=df_neg_sorted['Quantidade'].apply(lambda x: f'{x:,}'.replace(',', '.')),
+            textposition='inside',
+            insidetextanchor='end',
+            marker_color='#CC1C00', # Vermelho mais fiel à imagem
+            width=0.4 # Define uma grossura menor para a barra
+        ))
+        
+        # Adiciona o nome da tag logo acima de cada barra
+        for _, row in df_neg_sorted.iterrows():
+            fig_neg.add_annotation(
+                x=0,
+                y=row['Tag'],
+                text=f"<b>{row['Tag']}</b>",
+                showarrow=False,
+                xanchor='left',
+                yanchor='bottom',
+                yshift=12, # Desloca o texto para ficar exatamente em cima
+                font=dict(size=12, color='black')
+            )
+
+        fig_neg.update_layout(
+            xaxis_visible=False, 
+            yaxis_visible=False, # Oculta o eixo Y padrão ao lado
+            margin=dict(t=20, b=0, l=10, r=10), 
+            height=300,
+            plot_bgcolor='rgba(0,0,0,0)' # Fundo transparente
+        )
         st.plotly_chart(fig_neg, width='stretch')
 
 with col_inf2:
     with st.container(border=True):
         st.markdown("<h6 style='text-align: center;'>Tags positivas</h6>", unsafe_allow_html=True)
-        fig_pos = px.bar(df_tags_pos, x='Quantidade', y='Tag', orientation='h', text='Quantidade')
-        fig_pos.update_traces(marker_color='#1F77B4', textposition='inside')
-        fig_pos.update_layout(yaxis={'categoryorder':'total ascending'}, xaxis_visible=False, margin=dict(t=0, b=0, l=0, r=0), height=280)
+        
+        df_pos_sorted = df_tags_pos.sort_values('Quantidade', ascending=True)
+        
+        fig_pos = go.Figure()
+        fig_pos.add_trace(go.Bar(
+            x=df_pos_sorted['Quantidade'],
+            y=df_pos_sorted['Tag'],
+            orientation='h',
+            text=df_pos_sorted['Quantidade'].apply(lambda x: f'{x:,}'.replace(',', '.')),
+            textposition='inside',
+            insidetextanchor='end',
+            marker_color='#0A4B95', # Azul mais fiel à imagem
+            width=0.4 
+        ))
+        
+        for _, row in df_pos_sorted.iterrows():
+            fig_pos.add_annotation(
+                x=0,
+                y=row['Tag'],
+                text=f"<b>{row['Tag']}</b>",
+                showarrow=False,
+                xanchor='left',
+                yanchor='bottom',
+                yshift=12, 
+                font=dict(size=12, color='black')
+            )
+
+        fig_pos.update_layout(
+            xaxis_visible=False, 
+            yaxis_visible=False, 
+            margin=dict(t=20, b=0, l=10, r=10), 
+            height=300,
+            plot_bgcolor='rgba(0,0,0,0)'
+        )
         st.plotly_chart(fig_pos, width='stretch')
 
 with col_inf3:
     with st.container(border=True):
         st.markdown("<h6 style='text-align: center;'>Comentários por serviço</h6>", unsafe_allow_html=True)
         
-        with st.container(height=280):
+        with st.container(height=300):
             with st.expander("Acessar o CNH Recife - Inscrições, Consultas e Recursos", expanded=False):
                 st.write("Comentário sobre a CNH Recife...")
                 
