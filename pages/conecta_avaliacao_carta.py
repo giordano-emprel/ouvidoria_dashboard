@@ -9,6 +9,19 @@ df_pizza, df_mes, df_tabela, df_tags_neg, df_tags_pos = carregar_dados_avaliacao
 
 st.header("Avaliação da Carta de Serviços", divider="gray")
 
+# CSS para remover as bordas dos expanders e ajustar o visual
+st.markdown(
+    """
+    <style>
+    [data-testid="stExpander"] {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # --- ÁREA DE FILTROS (Com Moldura) ---
 
 with st.form("filtros_carta_form"):
@@ -176,22 +189,102 @@ with col_inf2:
         )
         st.plotly_chart(fig_pos, width='stretch')
 
+
+# CSS para reduzir o espaço vertical entre os elementos do Streamlit
+st.markdown(
+    """
+    <style>
+        /* Reduz o espaçamento padrão (gap) entre elementos dentro de containers */
+        [data-testid="stVerticalBlock"] {
+            gap: 0.1rem !important;
+        }
+
+        [data-testid="stExpander"] {
+            border: none !important;
+            box-shadow: none !important;
+        }
+    </style>
+""",
+    unsafe_allow_html=True,
+)
+
+# st.markdown(
+#     """
+#     <style>
+#     [data-testid="stExpander"] {
+#         border: none !important;
+#         box-shadow: none !important;
+#     }
+#     </style>
+#     """,
+#     unsafe_allow_html=True
+# )
+
+df_comentarios = pd.DataFrame(
+    [
+        {
+            "servico": (
+                "Acessar o CNH Recife - Inscrições, Consultas e Recursos"
+            ),
+            "comentario": "Comentário sobre a CNH Recife...",
+            "nota": 5.0,
+        },
+        {
+            "servico": (
+                "Acessar meus registros de saúde (Minha Saúde Conectada)"
+            ),
+            "comentario": "Péssimo!",
+            "nota": 1.0,
+        },
+        {
+            "servico": "Acessar meu cartão do SUS",
+            "comentario": "Só agradecer 🙏",
+            "nota": 5.0,
+        },
+        {
+            "servico": (
+                "Acessar extrato de débitos e emitir guias para pagamento do"
+                " CIM de autônomo"
+            ),
+            "comentario": "Muito prático",
+            "nota": 4.5,
+        },
+    ]
+)
+
 with col_inf3:
     with st.container(border=True):
-        st.markdown("<h6 style='text-align: center;'>Comentários por serviço</h6>", unsafe_allow_html=True)
-        
+        col_h1, col_h2 = st.columns([4, 1])
+        col_h1.markdown("**Comentários por serviço**")
+        col_h2.markdown("**Nota média**")
+
+        # Linha do cabeçalho com margem bem pequena
+        st.markdown(
+            "<hr style='margin: 4px 0 8px 0; border: none; border-top: 1px solid"
+            " #ddd;' />",
+            unsafe_allow_html=True,
+        )
+
         with st.container(height=300):
-            with st.expander("Acessar o CNH Recife - Inscrições, Consultas e Recursos", expanded=False):
-                st.write("Comentário sobre a CNH Recife...")
-                
-            with st.expander("Acessar meus registros de saúde (Minha Saúde Conectada)", expanded=True):
-                st.write("Péssimo!")
-                
-            with st.expander("Acessar meu cartão do SUS", expanded=True):
-                st.write("Só agradecer 🙏")
-                
-            with st.expander("Acessar extrato de débitos e emitir guias para pagamento do CIM de autônomo", expanded=False):
-                st.write("Sem comentários no momento.")
-                
-            with st.expander("Acessar extrato de débitos e emitir guias para pagamento das taxas de empresa", expanded=False):
-                st.write("Sem comentários no momento.")
+            if not df_comentarios.empty:
+                for servico, grupo in df_comentarios.groupby("servico"):
+                    media = grupo["nota"].mean()
+
+                    c_exp, c_nota = st.columns([4, 1])
+                    with c_exp:
+                        with st.expander(servico, expanded=False):
+                            for _, linha in grupo.iterrows():
+                                st.write(
+                                    f"• {linha['comentario']} ({linha['nota']:.2f})"
+                                )
+                    with c_nota:
+                        st.write(f"**{media:.2f}**".replace(".", ","))
+
+                    # Linha divisória customizada (ajuste os pixels de 'margin' se quiser mais perto/distante)
+                    st.markdown(
+                        "<hr style='border: none; border-top: 1px solid #ccc; margin-top: 0px;"
+                        " margin-bottom: 15.5px;' />",
+                        unsafe_allow_html=True,
+                    )
+            else:
+                st.info("Nenhum comentário encontrado.")
