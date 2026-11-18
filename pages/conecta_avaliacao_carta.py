@@ -50,7 +50,7 @@ if submit_button:
 col_sup1, col_sup2 = st.columns([1, 2.5])
 
 with col_sup1:
-    with st.container(border=True):
+    with st.container(border=True, height='content'):
         st.markdown("<h6 style='text-align: center; color: #555;'>Avaliação Geral</h6>", unsafe_allow_html=True)
         # Gráfico de Pizza (Likes vs Dislikes)
         fig_pizza = px.pie(
@@ -61,8 +61,8 @@ with col_sup1:
             color='Avaliação',
             color_discrete_map={'Like':'#1F77B4', 'Dislike':'#D62728'}
         )
-        fig_pizza.update_traces(textinfo='label+value+percent', textposition='outside')
-        fig_pizza.update_layout(showlegend=False, margin=dict(t=10, b=10, l=10, r=10), height=230)
+        fig_pizza.update_traces(textinfo='label+percent', textposition='outside')
+        fig_pizza.update_layout(showlegend=False, uniformtext_minsize=12, uniformtext_mode='show', margin=dict(t=30, b=30, l=10, r=10), height=230)
         st.plotly_chart(fig_pizza, width='stretch')
 
 with col_sup2:

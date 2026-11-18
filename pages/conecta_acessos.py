@@ -59,16 +59,16 @@ with st.form("filtros_acessos_form"):
             meses_lista = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
             meses_selecionados = [m for m in meses_lista if st.checkbox(m, key=f"mes_{m}")]
     
-    col_visor, _ = st.columns([4, 7]) 
-    with col_visor:
-        st.markdown("Tipos selecionados:")
-        st.multiselect(
-            "Visor Tipos",
-            options=["SERVIÇO", "PROGRAMA", "EVENTO"],
-            default=st.session_state.filtro_tipo, # Lê o valor do segmented_control
-            disabled=False,
-            label_visibility="collapsed"
-        )
+    # col_visor, _ = st.columns([4, 7]) 
+    # with col_visor:
+    #     st.markdown("Tipos selecionados:")
+    #     st.multiselect(
+    #         "Visor Tipos",
+    #         options=["SERVIÇO", "PROGRAMA", "EVENTO"],
+    #         default=st.session_state.filtro_tipo, # Lê o valor do segmented_control
+    #         disabled=False,
+    #         label_visibility="collapsed"
+    #     )
     col_submit, col_clear = st.columns([8, 1])
     with col_submit:
         submit_button = st.form_submit_button(label="Aplicar Filtros")
@@ -113,7 +113,14 @@ col_graf1, col_graf2 = st.columns([1, 2.5])
 
 with col_graf1:
     with st.container(border=True):
-        st.markdown("<h6 style='text-align: center; color: #555;'>Proporção App x Web</h6>", unsafe_allow_html=True)
+        c_tit, c_help = st.columns([0.88, 0.12])
+        with c_tit:
+            st.markdown(
+                "<h6 style='text-align: center; color: #555; margin-left: 14%;'>Proporção App x Web x Zap</h6>",
+                unsafe_allow_html=True
+            )
+        with c_help:
+            st.markdown("\u00A0", help="Exibe a distribuição percentual dos acessos totais por canal (App, Web e Zap), incluindo registros sem órgão identificado.")
         # Gráfico de Pizza (Proporção App/Web)
         fig_pizza = px.pie(
             df_pizza, 
@@ -121,10 +128,10 @@ with col_graf1:
             names='web_ou_app', 
             hole=0, 
             color='web_ou_app',
-            color_discrete_map={'app': '#E36B15', 'web': '#0A4B95'}
+            color_discrete_map={'app': '#E36B15', 'web': '#0A4B95', 'zap': "#767676"}
         )
-        fig_pizza.update_traces(textinfo='label+percent', textposition='inside')
-        fig_pizza.update_layout(showlegend=False, margin=dict(t=10, b=10, l=10, r=10), height=230)
+        fig_pizza.update_traces(textinfo='label+percent', textposition='outside')
+        fig_pizza.update_layout(showlegend=False, uniformtext_minsize=12, uniformtext_mode='show', margin=dict(t=30, b=30, l=10, r=10), height=227)
         st.plotly_chart(fig_pizza, width='stretch')
 
 with col_graf2:
@@ -145,24 +152,35 @@ with col_graf2:
         st.plotly_chart(fig_mes, width='stretch')
 
 # --- ÁREA INFERIOR (Tabela e Forma de Acesso) (Com Molduras) ---
-import streamlit as st
 
 col_tab, col_forma = st.columns([2.5, 1])
 
 with col_tab:
     with st.container(border=True):
 
-        col_item_type_selector, column_vision_selector = st.columns([4, 1])
+        col_item_type_selector, column_vision_selector, col_help = st.columns([4, 1, 0.23])
 
         with col_item_type_selector:
             options = ["SERVIÇO", "PROGRAMA", "EVENTO"]
-            item_type_selection = st.segmented_control("Item Type", options, selection_mode="multi", label_visibility = "collapsed", key="filtro_tipo")
+            item_type_selection = st.segmented_control(
+                "Item Type",
+                options,
+                selection_mode="multi",
+                label_visibility="collapsed",
+                key="filtro_tipo"
+            )
 
         with column_vision_selector:
             selected_vision = st.radio(
                 "Vision", 
                 options=["Objeto", "Órgão"], 
                 label_visibility="collapsed"
+            )
+
+        with col_help:
+            st.markdown(
+                "\u00A0",
+                help="Filtre os registros por categoria (Serviço, Programa ou Evento) e alterne a visualização agrupada por Objeto ou Órgão. Os totais de acessos são exibidos no rodapé da tabela e consideram apenas registros com órgão identificado."
             )
     
         if selected_vision == "Órgão":
